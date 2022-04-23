@@ -27,11 +27,14 @@ int get_tid() {
 
 void* producer_routine(void* arg) {
   cout << "Producer " << get_tid() << endl;
-  (void)arg;
+  istream* p_input_stream = static_cast<istream*>(arg);
+  istream& input_stream = *p_input_stream;
   int value = 0;
-  string read_number = "";
-  for (; cin >> value && !cin.fail();) {
-    cout << value;
+
+  while (input_stream >> value && !input_stream.fail()) {
+    pthread_mutex_lock(&mutex_queue);
+    int_queue.push(value);
+    pthread_mutex_unlock(&mutex_queue);
   }
   // read data, loop through each value and update the value, notify consumer,
   // wait for consumer to process
@@ -42,9 +45,21 @@ void* consumer_routine(void* arg) {
   cout << "Consumer " << get_tid() << endl;
   (void)arg;
 
+  pthread_setcancelstate(PTHREAD_CANCEL_DISABLE, nullptr);
+  th_cons_param* t_param = (th_cons_param*)arg;
+
   int* local_sum = new int;
   for (;;) {
-    // add to local sum
+    if (!int_queue.empty()) {
+      pthread_mutex_lock(&mutex_queue);
+      *local_sum += int_queue.front();
+      int_queue.pop();
+      if (t_param->debug) {
+        cout << get_tid() << " " << *local_sum << endl;
+      }
+      pthread_mutex_unlock(&mutex_queue);
+    }
+    // sleep
   }
   // for every update issued by producer, read the value and add to sum
   // return pointer to result (for particular consumer)
