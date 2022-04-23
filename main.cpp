@@ -1,6 +1,5 @@
 #include <cstring>
 #include <iostream>
-
 #include "producer_consumer.h"
 
 using namespace std;
@@ -9,7 +8,7 @@ int main(int argc, char *argv[]) {
   if (argc < 3) {
     cout << "Usage: " << argv[0]
          << " [number of customers] [max sleep time(ms)] {-debug}" << endl;
-    exit(1);
+    return 1;
   }
 
   int th_number = atoi(argv[1]);
@@ -21,7 +20,6 @@ int main(int argc, char *argv[]) {
   }
   // input params
   cout << th_number << endl << time_sleep << endl << debug << endl;
-  cout << run_threads(th_number, time_sleep, debug) << std::endl;
-
+  cout << run_threads(th_number, time_sleep, debug, cin) << std::endl;
   return 0;
 }
