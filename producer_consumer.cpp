@@ -1,8 +1,8 @@
 #include "producer_consumer.h"
 #include <pthread.h>
+#include <unistd.h>
 #include <iostream>
 #include <queue>
-#include <unistd.h>
 using namespace std;
 
 // numbers Q
@@ -27,12 +27,12 @@ int get_tid() {
 }
 
 void* producer_routine(void* arg) {
-//  cout << "Producer " << get_tid() << endl;
+  //  cout << "Producer " << get_tid() << endl;
   istream* p_input_stream = static_cast<istream*>(arg);
   istream& input_stream = *p_input_stream;
   int value = 0;
 
-  for (;input_stream >> value && !input_stream.fail();) {
+  for (; input_stream >> value && !input_stream.fail();) {
     pthread_mutex_lock(&mutex_queue);
     int_queue.push(value);
     pthread_mutex_unlock(&mutex_queue);
@@ -44,7 +44,7 @@ void* producer_routine(void* arg) {
 }
 
 void* consumer_routine(void* arg) {
-//  cout << "Consumer " << get_tid() << endl;
+  //  cout << "Consumer " << get_tid() << endl;
   (void)arg;
 
   pthread_setcancelstate(PTHREAD_CANCEL_DISABLE, nullptr);
@@ -62,9 +62,9 @@ void* consumer_routine(void* arg) {
     }
     pthread_mutex_unlock(&mutex_queue);
 
-    //random time [1;time_sleep] sleep
+    // random time [1;time_sleep] sleep
     if (t_param->time_sleep > 0) {
-      usleep((rand() % t_param->time_sleep + 1) * 1000); // 1 ms = 1000 mcs
+      usleep((rand() % t_param->time_sleep + 1) * 1000);  // 1 ms = 1000 mcs
     }
   }
   // for every update issued by producer, read the value and add to sum
@@ -74,7 +74,7 @@ void* consumer_routine(void* arg) {
 }
 
 void* consumer_interruptor_routine(void* arg) {
-//  cout << "Interruptor " << get_tid() << endl;
+  //  cout << "Interruptor " << get_tid() << endl;
   (void)arg;
   // interrupt random consumer while producer is running
   return nullptr;
