@@ -19,7 +19,7 @@ int main(int argc, char *argv[]) {
     debug = true;
   }
   // input params
-//  cout << th_number << endl << time_sleep << endl << debug << endl;
+  //  cout << th_number << endl << time_sleep << endl << debug << endl;
   cout << run_threads(th_number, time_sleep, debug, cin) << std::endl;
   return 0;
 }
