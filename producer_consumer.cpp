@@ -11,6 +11,8 @@ pthread_mutex_t mutex_queue;
 pthread_cond_t cond_queue;
 bool can_finish;
 
+pthread_barrier_t done_barrier;
+
 struct th_cons_param {
   int time_sleep = 0;
   bool debug = false;
@@ -49,8 +51,6 @@ void* producer_routine(void* arg) {
   pthread_mutex_lock(&mutex_queue);
   pthread_cond_broadcast(&cond_queue);
   pthread_mutex_unlock(&mutex_queue);
-  // read data, loop through each value and update the value, notify consumer,
-  // wait for consumer to process
   return nullptr;
 }
 
@@ -80,8 +80,7 @@ void* consumer_routine(void* arg) {
       usleep((rand() % t_param->time_sleep + 1) * 1000);  // 1 ms = 1000 mcs
     }
   }
-  // for every update issued by producer, read the value and add to sum
-  // return pointer to result (for particular consumer)
+  pthread_barrier_wait(&done_barrier);
   pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, nullptr);
   pthread_exit(static_cast<void*>(local_sum));
 }
@@ -95,20 +94,19 @@ void* consumer_interruptor_routine(void* arg) {
     pthread_cancel(consumers_info.consumers[rand() % consumers_info.n]);
   }
   // interrupt random consumer while producer is running
+  pthread_barrier_wait(&done_barrier);
   return nullptr;
 }
 
 // the declaration of run threads can be changed as you like
 int run_threads(int th_number, int time_sleep, bool debug,
                 std::istream& in_stream) {
-  // start N threads and wait until they're done
-  // return aggregated sum of values
-
   // init mutex
   pthread_mutex_init(&mutex_queue, NULL);
   pthread_cond_init(&cond_queue, NULL);
   can_finish = false;
 
+  pthread_barrier_init(&done_barrier, NULL, th_number + 1);
   // start producer. arg - istream
   pthread_t th_producer;
   pthread_create(&th_producer, NULL, &producer_routine, &in_stream);
@@ -144,5 +142,6 @@ int run_threads(int th_number, int time_sleep, bool debug,
   delete[] args;
   pthread_mutex_destroy(&mutex_queue);
   pthread_cond_destroy(&cond_queue);
+  pthread_barrier_destroy(&done_barrier);
   return all_sum;
 }
