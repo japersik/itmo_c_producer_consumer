@@ -83,7 +83,7 @@ void* consumer_routine(void* arg) {
   // for every update issued by producer, read the value and add to sum
   // return pointer to result (for particular consumer)
   pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, nullptr);
-  return static_cast<void*>(local_sum);
+  pthread_exit(static_cast<void*>(local_sum));
 }
 
 void* consumer_interruptor_routine(void* arg) {
