@@ -15,11 +15,17 @@ struct th_cons_param {
   bool debug = false;
 };
 
+struct th_interrupter_param {
+  int n;
+  pthread_t* consumers;
+};
+
 __thread int* TLS_id;
 
 int get_tid() {
   static int counter = 0;
   if (TLS_id == nullptr) {
+    // create id on first call
     TLS_id = new int;
     *TLS_id = ++counter;
   }
@@ -45,8 +51,6 @@ void* producer_routine(void* arg) {
 
 void* consumer_routine(void* arg) {
   //  cout << "Consumer " << get_tid() << endl;
-  (void)arg;
-
   pthread_setcancelstate(PTHREAD_CANCEL_DISABLE, nullptr);
   th_cons_param* t_param = (th_cons_param*)arg;
 
@@ -71,12 +75,17 @@ void* consumer_routine(void* arg) {
   // for every update issued by producer, read the value and add to sum
   // return pointer to result (for particular consumer)
   pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, nullptr);
-  pthread_exit(static_cast<void*>(local_sum));
+  return static_cast<void*>(local_sum);
 }
 
 void* consumer_interruptor_routine(void* arg) {
-  //  cout << "Interruptor " << get_tid() << endl;
-  (void)arg;
+  //  cout << "Interrupter " << get_tid() << endl;
+
+  th_interrupter_param consumers_info = *((th_interrupter_param*)arg);
+  // try to cancel
+  while (!can_finish || !int_queue.empty()) {
+    pthread_cancel(consumers_info.consumers[rand() % consumers_info.n]);
+  }
   // interrupt random consumer while producer is running
   return nullptr;
 }
@@ -106,8 +115,9 @@ int run_threads(int th_number, int time_sleep, bool debug,
 
   // start interrupter. arg - consumer threads
   pthread_t th_interrupter;
+  th_interrupter_param i_param = th_interrupter_param{th_number, th_consumers};
   pthread_create(&th_interrupter, NULL, &consumer_interruptor_routine,
-                 th_consumers);
+                 &i_param);
 
   // wait and get all sum
   int all_sum = 0;
@@ -123,6 +133,7 @@ int run_threads(int th_number, int time_sleep, bool debug,
   // clean data
   delete[] th_consumers;
   delete[] args;
+  pthread_mutex_destroy(&mutex_queue);
 
   return all_sum;
 }

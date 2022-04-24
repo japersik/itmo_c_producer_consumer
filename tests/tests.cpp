@@ -2,26 +2,38 @@
 #include <doctest.h>
 #include <producer_consumer.h>
 
-TEST_CASE("just_example") { CHECK(4 == 4); }
-
+// just test debug
 TEST_CASE("normal_test") {
   std::stringstream is;
   is << "1 2 3 4 5 6 7 8 9";
-  CHECK(run_threads(1, 200, false, is) == 45);
+  CHECK(run_threads(3, 200, true, is) == 45);
   is.str("");
   is.clear();
 }
 
+// 10 threads 0 ms sleep
+TEST_CASE("test_10_0") {
+  std::stringstream is;
+  is << "1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 "
+        "1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 "
+        "1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 ";
+  CHECK(run_threads(10, 0, false, is) == 100);
+  is.str("");
+  is.clear();
+}
+
+// 1 thread
 TEST_CASE("test_1_10") {
   std::stringstream is;
   is << "1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 "
         "1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 "
         "1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 ";
-  CHECK(run_threads(1, 10, true, is) == 100);
+  CHECK(run_threads(1, 10, false, is) == 100);
   is.str("");
   is.clear();
 }
 
+// 2 threads
 TEST_CASE("test_2_30") {
   std::stringstream is;
   is << "1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 "
@@ -32,6 +44,7 @@ TEST_CASE("test_2_30") {
   is.clear();
 }
 
+// 200 thread, 100 values
 TEST_CASE("test_200_200") {
   std::stringstream is;
   is << "1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 "
@@ -42,6 +55,7 @@ TEST_CASE("test_200_200") {
   is.clear();
 }
 
+// 1 thread, 1 ms sleep
 TEST_CASE("test_1_1") {
   std::stringstream is;
   is << "1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 "
@@ -51,6 +65,8 @@ TEST_CASE("test_1_1") {
   is.str("");
   is.clear();
 }
+
+// test from CI/CD testcases
 TEST_CASE("from_CICD_test") {
   std::stringstream is;
   is << "7139 26849 8176 19486 18575 24844 1367 19349 11695 31758 7608 21238 "
