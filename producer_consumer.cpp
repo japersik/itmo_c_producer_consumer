@@ -8,6 +8,7 @@ using namespace std;
 // numbers Q
 queue<int> int_queue;
 pthread_mutex_t mutex_queue;
+pthread_cond_t cond_queue;
 bool can_finish;
 
 struct th_cons_param {
@@ -40,10 +41,14 @@ void* producer_routine(void* arg) {
 
   for (; input_stream >> value && !input_stream.fail();) {
     pthread_mutex_lock(&mutex_queue);
+    pthread_cond_signal(&cond_queue);
     int_queue.push(value);
     pthread_mutex_unlock(&mutex_queue);
   }
   can_finish = true;
+  pthread_mutex_lock(&mutex_queue);
+  pthread_cond_broadcast(&cond_queue);
+  pthread_mutex_unlock(&mutex_queue);
   // read data, loop through each value and update the value, notify consumer,
   // wait for consumer to process
   return nullptr;
@@ -58,6 +63,9 @@ void* consumer_routine(void* arg) {
   *local_sum = 0;
   for (; !can_finish || !int_queue.empty();) {
     pthread_mutex_lock(&mutex_queue);
+    while (!can_finish && int_queue.empty()) {
+      pthread_cond_wait(&cond_queue, &mutex_queue);
+    }
     if (!int_queue.empty()) {
       *local_sum += int_queue.front();
       int_queue.pop();
@@ -98,6 +106,7 @@ int run_threads(int th_number, int time_sleep, bool debug,
 
   // init mutex
   pthread_mutex_init(&mutex_queue, NULL);
+  pthread_cond_init(&cond_queue, NULL);
   can_finish = false;
 
   // start producer. arg - istream
@@ -134,6 +143,6 @@ int run_threads(int th_number, int time_sleep, bool debug,
   delete[] th_consumers;
   delete[] args;
   pthread_mutex_destroy(&mutex_queue);
-
+  pthread_cond_destroy(&cond_queue);
   return all_sum;
 }
