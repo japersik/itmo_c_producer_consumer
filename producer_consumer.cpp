@@ -2,12 +2,13 @@
 #include <pthread.h>
 #include <iostream>
 #include <queue>
-
+#include <unistd.h>
 using namespace std;
 
 // numbers Q
 queue<int> int_queue;
 pthread_mutex_t mutex_queue;
+bool can_finish;
 
 struct th_cons_param {
   int time_sleep = 0;
@@ -26,48 +27,54 @@ int get_tid() {
 }
 
 void* producer_routine(void* arg) {
-  cout << "Producer " << get_tid() << endl;
+//  cout << "Producer " << get_tid() << endl;
   istream* p_input_stream = static_cast<istream*>(arg);
   istream& input_stream = *p_input_stream;
   int value = 0;
 
-  while (input_stream >> value && !input_stream.fail()) {
+  for (;input_stream >> value && !input_stream.fail();) {
     pthread_mutex_lock(&mutex_queue);
     int_queue.push(value);
     pthread_mutex_unlock(&mutex_queue);
   }
+  can_finish = true;
   // read data, loop through each value and update the value, notify consumer,
   // wait for consumer to process
   return nullptr;
 }
 
 void* consumer_routine(void* arg) {
-  cout << "Consumer " << get_tid() << endl;
+//  cout << "Consumer " << get_tid() << endl;
   (void)arg;
 
   pthread_setcancelstate(PTHREAD_CANCEL_DISABLE, nullptr);
   th_cons_param* t_param = (th_cons_param*)arg;
 
   int* local_sum = new int;
-  for (;;) {
+  for (; !can_finish || !int_queue.empty();) {
+    pthread_mutex_lock(&mutex_queue);
     if (!int_queue.empty()) {
-      pthread_mutex_lock(&mutex_queue);
       *local_sum += int_queue.front();
       int_queue.pop();
       if (t_param->debug) {
         cout << get_tid() << " " << *local_sum << endl;
       }
-      pthread_mutex_unlock(&mutex_queue);
     }
-    // sleep
+    pthread_mutex_unlock(&mutex_queue);
+
+    //random time [1;time_sleep] sleep
+    if (t_param->time_sleep > 0) {
+      usleep((rand() % t_param->time_sleep + 1) * 1000); // 1 ms = 1000 mcs
+    }
   }
   // for every update issued by producer, read the value and add to sum
   // return pointer to result (for particular consumer)
-  return local_sum;
+  pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, nullptr);
+  pthread_exit(static_cast<void*>(local_sum));
 }
 
 void* consumer_interruptor_routine(void* arg) {
-  cout << "Interruptor " << get_tid() << endl;
+//  cout << "Interruptor " << get_tid() << endl;
   (void)arg;
   // interrupt random consumer while producer is running
   return nullptr;
@@ -81,6 +88,7 @@ int run_threads(int th_number, int time_sleep, bool debug,
 
   // init mutex
   pthread_mutex_init(&mutex_queue, NULL);
+  can_finish = false;
 
   // start producer. arg - istream
   pthread_t th_producer;
