@@ -51,6 +51,7 @@ void* consumer_routine(void* arg) {
   th_cons_param* t_param = (th_cons_param*)arg;
 
   int* local_sum = new int;
+  *local_sum = 0;
   for (; !can_finish || !int_queue.empty();) {
     pthread_mutex_lock(&mutex_queue);
     if (!int_queue.empty()) {
@@ -116,6 +117,7 @@ int run_threads(int th_number, int time_sleep, bool debug,
       std::cout << "Error local sum reading" << std::endl;
     } else if (sum != nullptr) {
       all_sum += *sum;
+      delete sum;
     }
   }
   // clean data
