@@ -91,7 +91,7 @@ void* consumer_interruptor_routine(void* arg) {
 
   th_interrupter_param consumers_info = *((th_interrupter_param*)arg);
   // try to cancel
-  while (!can_finish || !int_queue.empty()) {
+  while (!can_finish) {
     pthread_cancel(consumers_info.consumers[rand() % consumers_info.n]);
   }
   // interrupt random consumer while producer is running
